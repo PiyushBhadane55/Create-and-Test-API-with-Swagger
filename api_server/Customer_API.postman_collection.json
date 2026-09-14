@@ -1,0 +1,152 @@
+{
+	"info": {
+		"_postman_id": "a7f6fedd-1abf-4594-8f2b-2c2481fe69e8",
+		"name": "Customer API (Spring Boot & Swagger UI)",
+		"description": "Postman collection for testing Customer REST API CRUD endpoints.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Get All Customers",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/customers",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customers"
+					]
+				},
+				"description": "Retrieves list of all registered customers."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Customer by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/customers/1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customers",
+						"1"
+					]
+				},
+				"description": "Retrieves a single customer by ID."
+			},
+			"response": []
+		},
+		{
+			"name": "Create New Customer",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Charlie Brown\",\n  \"email\": \"charlie@example.com\",\n  \"phone\": \"+1-555-0103\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/customers",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customers"
+					]
+				},
+				"description": "Creates a new customer record."
+			},
+			"response": []
+		},
+		{
+			"name": "Update Customer by ID",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Alice Updated\",\n  \"email\": \"alice.updated@example.com\",\n  \"phone\": \"+1-555-9999\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/customers/1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customers",
+						"1"
+					]
+				},
+				"description": "Updates customer details for given ID."
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Customer by ID",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/customers/2",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customers",
+						"2"
+					]
+				},
+				"description": "Deletes customer record by ID."
+			},
+			"response": []
+		},
+		{
+			"name": "Get OpenAPI v3 Docs",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/v3/api-docs",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"v3",
+						"api-docs"
+					]
+				},
+				"description": "Fetches raw OpenAPI v3 JSON spec."
+			},
+			"response": []
+		}
+	]
+}

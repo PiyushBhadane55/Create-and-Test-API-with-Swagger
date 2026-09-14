@@ -1,0 +1,12 @@
+{
+  "name": "customer-api-playwright-tests",
+  "version": "1.0.0",
+  "description": "Playwright E2E and API tests for Spring Boot Customer API & Swagger UI",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
+  }
+}
