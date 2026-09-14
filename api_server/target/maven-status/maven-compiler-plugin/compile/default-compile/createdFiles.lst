@@ -1,4 +1,15 @@
 com\example\demo\DemoApplication.class
-com\example\demo\controller\CustomerController.class
 com\example\demo\model\Customer.class
+com\example\demo\model\MpinChangeRequest.class
+com\example\demo\model\MpinVerifyRequest.class
+com\example\demo\entity\MpinRecordEntity.class
+com\example\demo\model\MpinResponse.class
+com\example\demo\model\MpinSetupRequest.class
+com\example\demo\controller\CustomerController.class
+com\example\demo\controller\MpinController.class
+com\example\demo\repository\CustomerRepository.class
+com\example\demo\model\MpinResetRequest.class
+com\example\demo\entity\CustomerEntity.class
+com\example\demo\model\MpinStatusResponse.class
 com\example\demo\config\OpenApiConfig.class
+com\example\demo\repository\MpinRepository.class

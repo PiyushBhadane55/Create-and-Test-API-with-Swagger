@@ -6,16 +6,23 @@ A RESTful Spring Boot application providing full CRUD operations for managing cu
 
 ## 🚀 Features
 
-- **Full CRUD Endpoints**:
+- **Full Customer CRUD Endpoints**:
   - `GET /api/customers` - List all customers
   - `GET /api/customers/{id}` - Fetch customer by ID
   - `POST /api/customers` - Create a new customer
   - `PUT /api/customers/{id}` - Update an existing customer
   - `DELETE /api/customers/{id}` - Delete a customer by ID
-- **Input Validation**: Uses `@Valid`, `@NotBlank`, and `@Email` constraint annotations.
+- **MPIN Mobile Banking PIN Authentication API**:
+  - `POST /api/mpin/setup` - Set up initial MPIN (with weak PIN validation)
+  - `POST /api/mpin/verify` - Verify user MPIN (3 failed attempt lockout control)
+  - `POST /api/mpin/change` - Change MPIN using existing MPIN
+  - `POST /api/mpin/reset` - Unlock account & reset MPIN using OTP reset token
+  - `GET /api/mpin/status/{userId}` - Check user MPIN configuration & account lock status
+- **Input Validation**: Uses `@Valid`, `@NotBlank`, `@Email`, and `@Pattern` constraint annotations.
 - **Interactive API Documentation**: Auto-generated Swagger UI using `springdoc-openapi`.
-- **Automated Playwright Tests**: Node.js Playwright API & UI test suite.
+- **Automated Playwright Tests**: Complete Node.js Playwright API test suite for Customer & MPIN endpoints.
 - **In-Memory Thread-Safe Data Store**: Uses `ConcurrentHashMap` and `AtomicLong` for instant testing without database setup.
+
 
 ---
 
@@ -53,8 +60,10 @@ npx playwright test
 ```
 
 ### Playwright Test Coverage:
-- `tests/api.spec.js`: Validates `GET`, `POST`, `PUT`, and `DELETE` HTTP endpoints.
+- `tests/api.spec.js`: Validates `GET`, `POST`, `PUT`, and `DELETE` Customer HTTP endpoints.
+- `tests/mpin.spec.js`: Validates MPIN setup, weak PIN rejection, verification, 3-attempt lockout control, account reset, and PIN change.
 - `tests/swagger-ui.spec.js`: Validates Swagger UI interface rendering.
+
 
 ---
 

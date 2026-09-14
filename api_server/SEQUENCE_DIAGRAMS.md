@@ -1,6 +1,6 @@
-# Customer API Sequence Diagrams
+# Customer & MPIN API Sequence Diagrams
 
-This document contains detailed **Mermaid Sequence Diagrams** illustrating the complete lifecycle of request execution, data validation, Swagger UI auto-documentation, and automated E2E testing in the Spring Boot Customer API project.
+This document contains detailed **Mermaid Sequence Diagrams** illustrating the complete lifecycle of request execution, data validation, Swagger UI auto-documentation, MPIN verification flows, and automated testing in the Spring Boot project.
 
 ---
 
@@ -96,7 +96,75 @@ sequenceDiagram
 
 ---
 
-## 2. 📖 OpenAPI Specification & Swagger UI Rendering Flow
+## 2. 🔐 MPIN Setup, Verification & 3-Failure Account Lockout Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Mobile App / Client
+    participant Dispatcher as Spring DispatcherServlet
+    participant Controller as MpinController
+    participant Validator as Weak PIN Rules Engine
+    participant Store as ConcurrentHashMap<String, MpinRecord>
+
+    %% --- MPIN SETUP ---
+    rect rgb(240, 255, 240)
+    note over User, Store: Step 1: MPIN Setup (/api/mpin/setup)
+    User->>Dispatcher: POST /api/mpin/setup {userId, mpin: "8419", confirmMpin: "8419"}
+    Dispatcher->>Controller: setupMpin()
+    Controller->>Validator: Check isWeakMpin("8419")
+    alt Weak MPIN (e.g. 1234 or 1111)
+        Validator-->>Controller: Weak PIN Flagged
+        Controller-->>User: 400 Bad Request (WEAK_MPIN)
+    else Valid MPIN
+        Controller->>Store: Store new MpinRecord (failedAttempts=0, isLocked=false)
+        Store-->>Controller: MpinRecord Saved
+        Controller-->>User: 201 Created (MPIN_SETUP_SUCCESS)
+    end
+    end
+
+    %% --- MPIN VERIFICATION & ATTEMPTS ---
+    rect rgb(255, 250, 240)
+    note over User, Store: Step 2: MPIN Verification (/api/mpin/verify)
+    User->>Dispatcher: POST /api/mpin/verify {userId, mpin: "9999"}
+    Dispatcher->>Controller: verifyMpin()
+    Controller->>Store: Lookup MpinRecord by userId
+    alt Wrong MPIN (Attempt #1 & #2)
+        Controller->>Store: Increment failedAttempts (1 -> 2)
+        Controller-->>User: 401 Unauthorized {status: "INVALID_MPIN", remainingAttempts: 2}
+    else Correct MPIN
+        Controller->>Store: Reset failedAttempts = 0
+        Controller-->>User: 200 OK {status: "MPIN_VERIFIED_SUCCESS", remainingAttempts: 3}
+    end
+    end
+
+    %% --- 3RD FAILURE LOCKOUT ---
+    rect rgb(255, 240, 245)
+    note over User, Store: Step 3: Account Lockout on 3rd Failure
+    User->>Dispatcher: POST /api/mpin/verify {userId, mpin: "9999"} (3rd Wrong Attempt)
+    Dispatcher->>Controller: verifyMpin()
+    Controller->>Store: Increment failedAttempts (3/3) -> Set isLocked = true
+    Controller-->>User: 423 Locked {status: "ACCOUNT_LOCKED", remainingAttempts: 0, accountLocked: true}
+    
+    note over User, Controller: Subsequent Verification Attempt
+    User->>Dispatcher: POST /api/mpin/verify {userId, mpin: "8419"} (Correct MPIN while locked)
+    Dispatcher->>Controller: verifyMpin()
+    Controller-->>User: 423 Locked (Blocked - Reset Token Required)
+    end
+
+    %% --- MPIN RESET ---
+    rect rgb(240, 248, 255)
+    note over User, Store: Step 4: Account Unlock via OTP Reset (/api/mpin/reset)
+    User->>Dispatcher: POST /api/mpin/reset {userId, resetToken: "123456", newMpin: "9531"}
+    Dispatcher->>Controller: resetMpin()
+    Controller->>Store: Set new MPIN "9531", isLocked=false, failedAttempts=0
+    Controller-->>User: 200 OK {status: "MPIN_RESET_SUCCESS", accountLocked: false}
+    end
+```
+
+---
+
+## 3. 📖 OpenAPI Specification & Swagger UI Rendering Flow
 
 ```mermaid
 sequenceDiagram
@@ -113,21 +181,21 @@ sequenceDiagram
     Browser->>UI: Initialize Swagger UI Application
     UI->>Springdoc: Async GET /v3/api-docs (Fetch OpenAPI Spec)
     Springdoc->>Reflection: Scan @RestController, @Tag, @Operation annotations
-    Reflection-->>Springdoc: Return complete API schema metadata
+    Reflection-->>Springdoc: Return complete API schema metadata (Customer API & MPIN API)
     Springdoc-->>UI: Serve JSON OpenAPI 3.0 Document
     UI->>UI: Parse OpenAPI JSON & Render API endpoints dynamically
     UI-->>Browser: Display Interactive Swagger UI Dashboard
 
     note over Developer, UI: Interactive "Try It Out" Execution Flow
-    Developer->>UI: Click "Try it out" -> Fill parameters -> Click "Execute"
-    UI->>Springdoc: Send HTTP Request to /api/customers
-    Springdoc-->>UI: HTTP Response (Status 200/201/204 + Headers + Body)
+    Developer->>UI: Select MPIN API -> Click "Try it out" -> Enter payload -> "Execute"
+    UI->>Springdoc: Send HTTP POST Request to /api/mpin/verify
+    Springdoc-->>UI: HTTP Response (Status 200/401/423 + Headers + Body)
     UI-->>Developer: Render Request URL, Curl command, Status Code & Response Payload
 ```
 
 ---
 
-## 3. 🧪 Playwright Automated E2E Test Execution Flow
+## 4. 🧪 Playwright Automated E2E Test Execution Flow
 
 ```mermaid
 sequenceDiagram
@@ -135,39 +203,40 @@ sequenceDiagram
     actor Tester as Test Engineer / CI Pipeline
     participant Runner as Playwright Test Runner
     participant APISpec as tests/api.spec.js
-    participant UISpec as tests/swagger-ui.spec.js
+    participant MPINSpec as tests/mpin.spec.js
     participant App as Spring Boot Application (Port 8080)
-    participant BrowserCtx as Playwright Headless Browser
 
     Tester->>Runner: Execute `npx playwright test`
     
-    %% API Tests
+    %% Customer API Tests
     rect rgb(240, 248, 255)
-    note over Runner, App: Phase A: API Endpoint Integration Testing
-    Runner->>APISpec: Run REST API spec tests
-    APISpec->>App: GET /api/customers
-    App-->>APISpec: 200 OK [Initial Customers]
-    APISpec->>App: POST /api/customers (New Customer)
-    App-->>APISpec: 201 Created {id: 3, name: ...}
-    APISpec->>App: PUT /api/customers/1 (Update Customer)
-    App-->>APISpec: 200 OK {id: 1, name: updated...}
-    APISpec->>App: DELETE /api/customers/3
-    App-->>APISpec: 204 No Content
-    APISpec-->>Runner: API Test Suite Passed (5/5 tests)
+    note over Runner, App: Phase A: Customer REST API Integration Testing
+    Runner->>APISpec: Run Customer API tests
+    APISpec->>App: GET /api/customers & GET /api/customers/1
+    App-->>APISpec: 200 OK
+    APISpec->>App: POST /api/customers & PUT & DELETE
+    App-->>APISpec: 201 Created, 200 OK, 204 No Content
+    APISpec-->>Runner: Customer API Spec Passed (5/5 tests)
     end
 
-    %% UI Tests
+    %% MPIN API Tests
     rect rgb(255, 250, 240)
-    note over Runner, BrowserCtx: Phase B: Swagger UI Frontend Verification
-    Runner->>UISpec: Run Swagger UI browser tests
-    UISpec->>BrowserCtx: Launch Chromium Context -> Open /swagger-ui.html
-    BrowserCtx->>App: Request Swagger UI & /v3/api-docs
-    App-->>BrowserCtx: 200 OK (Swagger assets & spec)
-    BrowserCtx->>BrowserCtx: Render DOM elements (.title, .version, .opblock)
-    UISpec->>BrowserCtx: Assert `.title` contains "Customer Management API"
-    UISpec->>BrowserCtx: Assert HTTP method badges (GET, POST, PUT, DELETE) are visible
-    UISpec-->>Runner: UI Test Suite Passed (2/2 tests)
+    note over Runner, App: Phase B: MPIN Authentication API Testing
+    Runner->>MPINSpec: Run MPIN API tests
+    MPINSpec->>App: GET /api/mpin/status/USER1001
+    App-->>MPINSpec: 200 OK {isMpinSet: true, isLocked: false}
+    MPINSpec->>App: POST /api/mpin/setup (Weak PIN "1234")
+    App-->>MPINSpec: 400 Bad Request (WEAK_MPIN)
+    MPINSpec->>App: POST /api/mpin/verify (Correct MPIN)
+    App-->>MPINSpec: 200 OK (MPIN_VERIFIED_SUCCESS)
+    MPINSpec->>App: POST /api/mpin/verify (3 Wrong Attempts)
+    App-->>MPINSpec: 401 Unauthorized -> 423 Locked
+    MPINSpec->>App: POST /api/mpin/reset (OTP Token "123456")
+    App-->>MPINSpec: 200 OK (MPIN_RESET_SUCCESS)
+    MPINSpec->>App: POST /api/mpin/change (Change MPIN)
+    App-->>MPINSpec: 200 OK (MPIN_CHANGED_SUCCESS)
+    MPINSpec-->>Runner: MPIN API Spec Passed (8/8 tests)
     end
 
-    Runner-->>Tester: All E2E Tests Executed Successfully (7/7 Passed)
+    Runner-->>Tester: All E2E API Tests Passed (13/13 Passed)
 ```

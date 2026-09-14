@@ -37,21 +37,22 @@ graph LR
 
 ## 🧩 Layer & Component Breakdown
 
-### 1. Presentation Layer (`CustomerController`)
-- **Location**: `com.example.demo.controller.CustomerController`
-- **Role**: Handles incoming HTTP requests (`GET`, `POST`, `PUT`, `DELETE`), processes path parameters and request bodies, maps HTTP status codes, and delegates data persistence operations.
-- **Annotations**: `@RestController`, `@RequestMapping("/api/customers")`, `@Tag`, `@Operation`, `@ApiResponse`.
+### 1. Presentation Layer (`CustomerController` & `MpinController`)
+- **Location**: `com.example.demo.controller.CustomerController`, `com.example.demo.controller.MpinController`
+- **Role**: Handles REST HTTP requests (`GET`, `POST`, `PUT`, `DELETE`), processes path parameters and request bodies, maps HTTP status codes (200, 201, 204, 400, 401, 423 Locked), and manages MPIN security attempt limits.
+- **Annotations**: `@RestController`, `@RequestMapping`, `@Tag`, `@Operation`, `@ApiResponse`.
 
-### 2. Domain Model (`Customer`)
-- **Location**: `com.example.demo.model.Customer`
-- **Role**: Data Transfer Object (DTO) and Entity representation. Includes OpenAPI annotations (`@Schema`) for schema documentation and validation rules (`@NotBlank`, `@Email`).
+### 2. Domain Models (`Customer` & MPIN DTOs)
+- **Location**: `com.example.demo.model.*`
+- **Role**: Data Transfer Objects (DTOs) including `Customer`, `MpinSetupRequest`, `MpinVerifyRequest`, `MpinChangeRequest`, `MpinResetRequest`, `MpinResponse`, and `MpinStatusResponse`. Includes OpenAPI annotations (`@Schema`) and validation rules (`@NotBlank`, `@Email`, `@Pattern`).
 
 ### 3. Configuration Layer (`OpenApiConfig`)
 - **Location**: `com.example.demo.config.OpenApiConfig`
 - **Role**: Customizes the OpenAPI 3 specification metadata (Title, Version, Description, and Contact info).
 
 ### 4. Persistence Layer (In-Memory Data Store)
-- **Role**: Thread-safe memory storage using `ConcurrentHashMap<Long, Customer>` and an `AtomicLong` counter for unique ID generation. Enables high-speed testing without external database dependencies.
+- **Role**: Thread-safe memory storage using `ConcurrentHashMap<Long, Customer>` for customers and `ConcurrentHashMap<String, MpinRecord>` for user MPIN records. Enables high-speed testing without external database dependencies.
+
 
 ---
 
